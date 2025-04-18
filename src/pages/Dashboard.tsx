@@ -21,7 +21,7 @@ const sectionLabels = {
 
 export default function Dashboard() {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { taskCards, loading } = useFetchTaskInstances();
+  const { taskCards, loading, fetchTaskInstances } = useFetchTaskInstances();
 
   const grouped = {
     assigned: taskCards.filter((t) => t.tasks?.frequency === "assigned"),
@@ -32,9 +32,6 @@ export default function Dashboard() {
 
   return (
     <>
-      <Heading size="lg" mb={6}>
-        Your Tasks
-      </Heading>
       <Button mb={6} colorScheme="teal" onClick={onOpen}>
         + New Task
       </Button>
@@ -81,6 +78,8 @@ export default function Dashboard() {
                     assignedDate={ti.assigned_date}
                     missedCount={ti.missedCount}
                     lastCompleted={ti.lastCompleted}
+                    instanceId={ti.id}
+                    onStatusChange={fetchTaskInstances}
                   />
                 ))
               )}

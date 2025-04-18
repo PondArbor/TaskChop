@@ -1,4 +1,14 @@
-import { Alert, AlertIcon, Badge, Box, Stack, Text } from "@chakra-ui/react";
+import {
+  Badge,
+  Box,
+  Checkbox,
+  Flex,
+  Text,
+  Tooltip,
+  useToast,
+} from "@chakra-ui/react";
+import { useState } from "react";
+import { supabase } from "../supabaseClient";
 import { Task } from "../types/Task";
 
 type TaskCardProps = {
@@ -7,6 +17,8 @@ type TaskCardProps = {
   assignedDate: string;
   missedCount?: number;
   lastCompleted?: string;
+  instanceId?: string;
+  onStatusChange?: () => void;
 };
 
 export default function TaskCard({
@@ -15,58 +27,62 @@ export default function TaskCard({
   assignedDate,
   missedCount,
   lastCompleted,
+  instanceId,
+  onStatusChange,
 }: TaskCardProps) {
-  const showMissedNotice = missedCount && missedCount > 0;
+  const toast = useToast();
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleStatusToggle = async () => {
+    if (!instanceId) return;
+
+    const newStatus = status === "completed" ? "pending" : "completed";
+
+    setIsUpdating(true);
+    const { error } = await supabase
+      .from("task_instances")
+      .update({ status: newStatus })
+      .eq("id", instanceId);
+
+    setIsUpdating(false);
+
+    if (error) {
+      toast({
+        status: "error",
+        title: "Failed to update task status",
+        description: error.message,
+      });
+    } else {
+      onStatusChange?.();
+    }
+  };
+
+  const showMissedNotice = typeof missedCount === "number" && missedCount > 0;
 
   return (
-    <Box p={3} mb={3} borderWidth="1px" borderRadius="md" bg="gray.50">
-      <Stack spacing={2}>
-        {/* Title */}
-        <Text fontWeight="bold">{task.title}</Text>
-
-        {/* Missed Notice */}
-        {showMissedNotice && (
-          <Alert
-            status="warning"
-            variant="left-accent"
-            fontSize="sm"
-            p={2}
-            borderRadius="md"
-          >
-            <AlertIcon boxSize="16px" />
-            Missed {missedCount} {missedCount === 1 ? "day" : "days"}
-            {lastCompleted && (
-              <>
-                ; last completed on{" "}
-                {new Date(lastCompleted).toLocaleDateString()}
-              </>
-            )}
-            .
-          </Alert>
-        )}
-
-        {/* Description */}
-        {task.description && (
-          <Text fontSize="sm" color="gray.700">
-            {task.description}
+    <Box
+      p={2}
+      mb={2}
+      borderWidth="1px"
+      borderRadius="md"
+      bg="gray.50"
+      _hover={{ bg: "gray.100" }}
+    >
+      <Flex align="center" justify="space-between" mb={1}>
+        <Flex align="center" gap={2}>
+          <Checkbox
+            isChecked={status === "completed"}
+            onChange={handleStatusToggle}
+            isDisabled={isUpdating}
+            colorScheme="green"
+          />
+          <Text fontWeight="bold" fontSize="sm">
+            {task.title}
           </Text>
-        )}
+        </Flex>
 
-        {/* Frequency + Day */}
-        <Text fontSize="sm" color="gray.500">
-          <strong>Frequency:</strong> {task.frequency}
-          {task.frequency === "weekly" && task.day_of_week
-            ? ` (${task.day_of_week})`
-            : ""}
-        </Text>
-
-        {/* Assigned Date */}
-        <Text fontSize="sm" color="gray.500">
-          <strong>Scheduled:</strong> {assignedDate}
-        </Text>
-
-        {/* Status */}
         <Badge
+          fontSize="0.65em"
           colorScheme={
             status === "missed"
               ? "red"
@@ -74,23 +90,61 @@ export default function TaskCard({
               ? "green"
               : "blue"
           }
-          width="fit-content"
         >
           {status}
         </Badge>
+      </Flex>
 
-        {/* Optional: tag and created_at */}
+      {task.description && (
+        <Text fontSize="xs" color="gray.700" noOfLines={2} mb={1}>
+          {task.description}
+        </Text>
+      )}
+
+      {showMissedNotice && (
+        <Box mb={1}>
+          <Tooltip
+            label={`Missed ${missedCount} ${
+              missedCount === 1 ? "day" : "days"
+            }${
+              lastCompleted
+                ? `, last completed ${new Date(
+                    lastCompleted
+                  ).toLocaleDateString()}`
+                : ""
+            }`}
+            fontSize="xs"
+            hasArrow
+          >
+            <Badge fontSize="0.65em" colorScheme="orange">
+              Missed ×{missedCount}
+            </Badge>
+          </Tooltip>
+        </Box>
+      )}
+
+      <Flex gap={3} fontSize="xs" color="gray.600" wrap="wrap">
+        <Text>
+          <strong>Every:</strong> {task.frequency}
+          {task.frequency === "weekly" && task.day_of_week
+            ? ` (${task.day_of_week})`
+            : ""}
+        </Text>
+        <Text>
+          <strong>Scheduled:</strong> {assignedDate}
+        </Text>
         {task.tag_id && (
-          <Text fontSize="xs" color="gray.400">
-            Tag: {task.tag_id}
+          <Text>
+            <strong>Tag:</strong> {task.tag_id}
           </Text>
         )}
         {task.created_at && (
-          <Text fontSize="xs" color="gray.400">
-            Created: {new Date(task.created_at).toLocaleDateString()}
+          <Text>
+            <strong>Created:</strong>{" "}
+            {new Date(task.created_at).toLocaleDateString()}
           </Text>
         )}
-      </Stack>
+      </Flex>
     </Box>
   );
 }
