@@ -1,8 +1,9 @@
 import { Task } from "../types/Task";
+import getTodaysDate from "./getTodaysDate";
 
 export function shouldCreateTaskInstanceToday(task: Task): boolean {
   const today = new Date();
-  const todayISO = today.toISOString().split("T")[0];
+  const todayISO = getTodaysDate();
   const weekday = today
     .toLocaleDateString("en-US", { weekday: "long" })
     .toLowerCase();

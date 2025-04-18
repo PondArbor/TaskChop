@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Task, TaskInstance } from "../types/Task";
+import getTodaysDate from "../utils/getTodaysDate";
 
 export type EnrichedTaskInstance = TaskInstance & {
   tasks: Task;
@@ -15,7 +16,7 @@ export function useFetchTaskInstances() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const today = new Date().toISOString().split("T")[0];
+      const today = getTodaysDate();
 
       const { data: instances, error } = await supabase
         .from("task_instances")

@@ -19,6 +19,7 @@ import {
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Task } from "../types/Task";
+import getTodaysDate from "../utils/getTodaysDate";
 
 type TaskFormProps = {
   isOpen: boolean;
@@ -36,9 +37,7 @@ export default function TaskForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dayOfWeek, setDayOfWeek] = useState("");
-  const [assignedDate, setAssignedDate] = useState(
-    () => new Date().toISOString().split("T")[0]
-  );
+  const [assignedDate, setAssignedDate] = useState(() => getTodaysDate());
 
   const [frequency, setFrequency] = useState("daily");
   const toast = useToast();
@@ -50,15 +49,13 @@ export default function TaskForm({
       setDescription(initialData.description || "");
       setFrequency(initialData.frequency || "daily");
       setDayOfWeek(initialData.day_of_week || "");
-      setAssignedDate(
-        initialData.assigned_date || new Date().toISOString().split("T")[0]
-      );
+      setAssignedDate(getTodaysDate());
     } else {
       setTitle("");
       setDescription("");
       setFrequency("daily");
       setDayOfWeek("");
-      setAssignedDate(new Date().toISOString().split("T")[0]);
+      setAssignedDate(getTodaysDate());
     }
   }, [initialData]);
 
@@ -127,7 +124,7 @@ export default function TaskForm({
           .from("task_instances")
           .insert({
             task_id: data.id,
-            assigned_date: new Date().toISOString().split("T")[0],
+            assigned_date: getTodaysDate(),
             status: "pending",
           });
 
@@ -181,7 +178,7 @@ export default function TaskForm({
               <Input
                 type="date"
                 value={assignedDate}
-                min={new Date().toISOString().split("T")[0]}
+                min={getTodaysDate()}
                 onChange={(e) => {
                   const dateStr = e.target.value;
                   setAssignedDate(dateStr);
